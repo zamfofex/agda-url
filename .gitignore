@@ -1,0 +1,7 @@
+*
+!/.gitignore
+!/url.agda-lib
+!/Data
+!/Main
+!/Data/**
+!/Main/**
