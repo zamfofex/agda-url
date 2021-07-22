@@ -1,5 +1,6 @@
 *
 !/.gitignore
+!/readme.md
 !/url.agda-lib
 !/Data
 !/Main
