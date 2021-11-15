@@ -7,9 +7,9 @@ The goal is to eventually be able to write proofs about some of the interesting 
 
 To try it out, the `Main/AgdaURL.agda` serves as an entry point. After compiling it, simply write a URL as the first line to stdin, and it should output information about it to stdout.
 
-~~~ sh
+~~~ bash
 agda --ghc Main/AgdaURL.agda
-echo 'https://alwinb.github.io/url-specification/#parsing' | ./AgdaURL
+./AgdaURL <<< $'url-specification/#parsing\nhttps://alwinb.github.io'
 ~~~
 
 For now, only parsing is implemented, and host parsing is incomplete.
@@ -17,10 +17,7 @@ For now, only parsing is implemented, and host parsing is incomplete.
 - **TODO:** Implement a better host parser.
 - **TODO:** Implement punycoding.
 - **TODO:** Implement percent‐encoding.
-- **TODO:** Implement the “goto” operation.
-- **TODO:** Implement forcing.
 - **TODO:** Implement normalization.
-- **TODO:** Implement resolution.
 - **TODO:** Write proofs for the URL operation properties.
 - **TODO:** Test against the WPT suite.
 
