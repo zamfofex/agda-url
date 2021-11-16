@@ -5,7 +5,7 @@ This is an Agda implementation of URLs as defined in <https://alwinb.github.io/u
 
 The goal is to eventually be able to write proofs about some of the interesting properties established therein and possibly others.
 
-To try it out, the `Main/AgdaURL.agda` serves as an entry point. After compiling it, simply write a URL as the first line to stdin, and it should output information about it to stdout.
+To try it out, the `Main/AgdaURL.agda` serves as an entry point. After compiling it, simply write a target URL as the first line to stdin, a base URL as the second line, and it should output information about the parsed URLs and the resolved URL to stdout.
 
 ~~~ bash
 agda --ghc Main/AgdaURL.agda
