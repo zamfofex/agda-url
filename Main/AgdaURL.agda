@@ -39,10 +39,10 @@ main = run do
    
    info : URL → List String
    info url =
-     ("href   : " ++ URL.print url) ∷
-     ("scheme : " ++ URL.print-scheme′ (URL.scheme url)) ∷
-     ("auth   : " ++ URL.print-authority′ (URL.authority url)) ∷
-     ("drive  : " ++ URL.print-drive′ (URL.drive url)) ∷
-     ("path   : " ++ URL.print-path (URL.path url)) ∷
-     ("query  : " ++ URL.print-query′ (URL.query url)) ∷
-     ("frag   : " ++ URL.print-fragment′ (URL.fragment url)) ∷ []
+     ("href:   " ++ URL.print url) ∷
+     ("scheme: " ++ URL.print-scheme′ (URL.scheme url)) ∷
+     ("auth:   " ++ URL.print-authority′ (URL.authority url)) ∷
+     ("drive:  " ++ URL.print-drive′ (URL.drive url)) ∷
+     ("path:   " ++ URL.print-path (URL.path url)) ∷
+     ("query:  " ++ URL.print-query′ (URL.query url)) ∷
+     ("frag:   " ++ URL.print-fragment′ (URL.fragment url)) ∷ []

@@ -11,7 +11,7 @@ open import Text.Regex ≤-decPoset
    using (Exp ; Match ; [_] ; [^_] ; _─_ ; _∣_ ; _∙_ ; _⋆ ; _+ ; · ; singleton ; ε ; ∅)
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl)
 open import Data.List
-   using (List ; _∷_ ; [] ; drop ; map ; length ; concatMap ; dropWhile ; reverse ; filter ; foldr ; head)
+   using (List ; _∷_ ; [] ; drop ; map ; length ; concatMap ; dropWhile ; reverse ; filter ; foldr)
    renaming (linesBy to split ; _++_ to _++ᴸ_)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise)
 open import Data.List.Membership.Propositional using (_∈_)
@@ -35,7 +35,6 @@ open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Sum using (_⊎_ ; inj₁ ; inj₂)
 open import Relation.Unary using (Decidable)
 
--- Preliminaries
 private
    decimal hex-upper hex-lower hex : Exp
    alpha-upper alpha-lower alpha : Exp
@@ -147,6 +146,11 @@ record URL : Set where
    path : Path
    path = mkPath path-root dirs file
    
+   private
+     authority- : Authority
+     authority- = fromMaybe (mkAuthority nothing nothing nothing nothing) authority
+   open Authority authority- using (username ; password ; host ; port) public
+   
    -- field {scheme-valid} : maybe ValidScheme ⊤ scheme
    -- field {drive-valid} : maybe ValidDrive ⊤ drive
 
@@ -176,7 +180,7 @@ private
       
       user-char host-char path-char query-char : Exp
       user-char = [^ map [_] $ s-chars ++ᴸ toList "#:?" ]
-      host-char = [^ map [_] $ toList "x00\x09\x0A\x0D #/:<>?@[\\]^" ]
+      host-char = [^ map [_] $ toList "\x00\x09\x0A\x0D #/:<>?@[\\]^" ]
       path-char = [^ map [_] $ s-chars ++ᴸ toList "#?" ]
       query-char = [^ [ '#' ] ∷ [] ]
       
@@ -202,14 +206,14 @@ private
       authority-parser : Parser Authority
       authority-parser = do
          credentials ← try credentials
-         host ← longest $ host-char ⋆
+         host ← try ∘ longest $ host-char +
          port ← try port
          let username , password = maybe′ (map₁ just) (nothing , nothing) credentials
          
          return record {
             username = username ;
             password = password ;
-            host = just (opaque-host host) ;
+            host = Maybe.map opaque-host host ;
             port = port }
       
       parse-authority : String → Maybe Authority
@@ -523,22 +527,26 @@ base-url? url with base-web-url? url | base-file-url? url | base-generic-url? ur
    (generic-base-url base-generic-url) → not-base-generic-url base-generic-url
 
 private
-   first-nonempty-part : URL → Maybe String
-   first-nonempty-part record { dirs = dirs ; file = file } = head ∘ filter (λ str → ¬? (str ≟ˢ "")) $ dirs ++ᴸ fromMaybe "" file ∷ []
+   skip-empty-dirs : URL → List String
+   skip-empty-dirs record { dirs = dirs } = dropWhile (_≟ˢ "") dirs
+   
+   with-authority : URL → List String → Authority → URL
+   with-authority url dirs authority = record url { dirs = dirs ; path-root = true ; authority = just authority }
 
 force : URL → Maybe URL
 force url with absolute-url? url
 ... | no _ = nothing
 ... | yes _ with file-url? url | web-url? url | url
-... | no _ | no _ | _ = nothing
+... | no _ | no _ | url = just url
 ... | yes _ | _ | record { drive = drive ; authority = authority ; path-root = path-root } =
    just record url { path-root = path-root ∨ ⌊ is-just? drive ⌋ ; authority = authority Maybe.<∣> (just $′ mkAuthority nothing nothing nothing nothing) }
-... | _ | yes _ | record { authority = just _ } = just record url { path-root = true }
-... | _ | yes _ | _ with first-nonempty-part url
-... | nothing = nothing
-... | just part with AuthorityParser.parse-authority (toList "/\\") part
-... | nothing = nothing
-... | just authority = just record url { path-root = true ; authority = just authority }
+... | _ | yes _ | record { authority = just record { host = just _ } } = just record url { path-root = true }
+... | _ | yes _ | _ with skip-empty-dirs url | URL.file url
+... | [] | nothing = nothing
+... | dir ∷ dirs | _ = Maybe.map (with-authority url dirs) $ AuthorityParser.parse-authority (toList "/\\") dir
+... | [] | just file =
+   Maybe.map (λ url → record url { file = nothing }) ∘
+   Maybe.map (with-authority url []) $ AuthorityParser.parse-authority (toList "/\\") file
 
 _goto_ : URL → URL → URL
 url₁ goto url₂ with url₂
@@ -584,8 +592,8 @@ resolve url₁ url₂ with base-url? url₂ or absolute-url? url₁ | absolute-u
 
 forced-resolve : URL → URL → Maybe URL
 forced-resolve url₁ url₂ with web-url? url₂ or file-url? url₂
-... | yes _ = Maybe._>>=_ (Maybe._>>=_ (force url₂) (~resolve url₁)) force
-... | _ = Maybe._>>=_ (resolve url₁ url₂) force
+... | yes _ = (force url₂ Maybe.>>= ~resolve url₁) Maybe.>>= force
+... | no _ = resolve url₁ url₂ Maybe.>>= force
 
 private
    join : List String → String
@@ -658,4 +666,4 @@ print-path (mkPath path-root dirs file) =
    print-dirs dirs ++
    print-file′ file
 
-open URL using (scheme ; authority ; drive ; path-root ; dirs ; file ; query ; fragment ; path) public
+open URL using (scheme ; authority ; drive ; path-root ; dirs ; file ; query ; fragment ; path ; username ; password ; host ; port) public
